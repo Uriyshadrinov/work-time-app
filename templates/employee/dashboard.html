@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Мой кабинет | WorkTrack{% endblock %}
+{% block page_title %}Кабинет сотрудника{% endblock %}
+
+{% block content %}
+<section class="grid two-columns">
+    <article class="panel profile-panel">
+        <div class="panel-heading">
+            <h3>Профиль</h3>
+            <p class="muted">Основные данные сотрудника и текущая ставка.</p>
+        </div>
+
+        <div class="profile-block">
+            <div>
+                <span class="label">Имя</span>
+                <strong>{{ employee.full_name }}</strong>
+            </div>
+            <div>
+                <span class="label">Должность</span>
+                <strong>{{ employee.position }}</strong>
+            </div>
+            <div>
+                <span class="label">Ставка</span>
+                <strong>{{ '%.2f'|format(employee.hourly_rate) }} ₽ / час</strong>
+            </div>
+            <div>
+                <span class="label">Статус сегодня</span>
+                <strong>
+                    {% if not today_log %}
+                    День ещё не начат
+                    {% elif today_log.status == 'absent' %}
+                    Пропуск
+                    {% elif today_log.check_out %}
+                    Рабочий день завершён
+                    {% else %}
+                    Рабочий день идёт
+                    {% endif %}
+                </strong>
+            </div>
+        </div>
+    </article>
+
+    <article class="panel accent-panel">
+        <div class="panel-heading">
+            <h3>Отметка рабочего дня</h3>
+            <p class="muted">Используйте кнопки ниже для фиксации начала и окончания работы.</p>
+        </div>
+
+        <div class="action-stack">
+            <form method="post" action="{{ url_for('start_day') }}">
+                <button class="button button-primary button-full" type="submit">Начать рабочий день</button>
+            </form>
+            <form method="post" action="{{ url_for('end_day') }}">
+                <button class="button button-success button-full" type="submit">Закончить рабочий день</button>
+            </form>
+        </div>
+
+        {% if today_log %}
+        <div class="today-summary">
+            <div>
+                <span class="label">Приход</span>
+                <strong>{{ today_log.check_in or '—' }}</strong>
+            </div>
+            <div>
+                <span class="label">Уход</span>
+                <strong>{{ today_log.check_out or '—' }}</strong>
+            </div>
+            <div>
+                <span class="label">Опоздание</span>
+                <strong>{{ today_log.late_minutes or 0 }} мин</strong>
+            </div>
+            <div>
+                <span class="label">Часы</span>
+                <strong>{{ '%.2f'|format(today_log.worked_hours or 0) }}</strong>
+            </div>
+        </div>
+        {% endif %}
+    </article>
+</section>
+
+<section class="stats-grid">
+    <article class="stat-card">
+        <span>Отработано за месяц</span>
+        <strong>{{ '%.2f'|format(summary.total_hours or 0) }} ч</strong>
+    </article>
+    <article class="stat-card">
+        <span>Заработано за месяц</span>
+        <strong>{{ '%.2f'|format(summary.total_earnings or 0) }} ₽</strong>
+    </article>
+    <article class="stat-card">
+        <span>Рабочих дней</span>
+        <strong>{{ summary.worked_days or 0 }}</strong>
+    </article>
+    <article class="stat-card">
+        <span>Опозданий</span>
+        <strong>{{ summary.late_days or 0 }}</strong>
+    </article>
+    <article class="stat-card">
+        <span>Пропусков</span>
+        <strong>{{ summary.absent_days or 0 }}</strong>
+    </article>
+</section>
+
+<section class="grid charts-grid">
+    <article class="panel">
+        <div class="panel-heading">
+            <h3>Рабочие часы по дням</h3>
+            <p class="muted">График личной выработки за текущий месяц.</p>
+        </div>
+        <canvas id="employeeHoursChart"></canvas>
+    </article>
+
+    <article class="panel">
+        <div class="panel-heading">
+            <h3>Опоздания</h3>
+            <p class="muted">Отметки позднего начала по рабочим дням.</p>
+        </div>
+        <canvas id="employeeLateChart"></canvas>
+    </article>
+
+    <article class="panel">
+        <div class="panel-heading">
+            <h3>Заработок</h3>
+            <p class="muted">Доход за каждый отмеченный день.</p>
+        </div>
+        <canvas id="employeeEarningsChart"></canvas>
+    </article>
+</section>
+
+<section class="panel">
+    <div class="panel-heading">
+        <h3>История рабочих дней</h3>
+        <p class="muted">Последние отмеченные дни, пропуски и начисления.</p>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>Статус</th>
+                    <th>Приход</th>
+                    <th>Уход</th>
+                    <th>Часы</th>
+                    <th>Опоздание</th>
+                    <th>Заработок за день</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in history %}
+                <tr>
+                    <td>{{ row.work_date }}</td>
+                    <td>
+                        <span class="tag {{ 'tag-danger' if row.status == 'absent' else 'tag-success' }}">
+                            {{ 'Пропуск' if row.status == 'absent' else 'Рабочий день' }}
+                        </span>
+                    </td>
+                    <td>{{ row.check_in or '—' }}</td>
+                    <td>{{ row.check_out or '—' }}</td>
+                    <td>{{ '%.2f'|format(row.worked_hours or 0) }}</td>
+                    <td>{{ row.late_minutes or 0 }} мин</td>
+                    <td>{{ '%.2f'|format(row.day_earnings or 0) }} ₽</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="empty-state">История пока пуста. Начните первый рабочий день.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.employeeChartPayload = {{ chart_data|tojson }};
+</script>
+<script>
+    createLineChart('employeeHoursChart', window.employeeChartPayload.labels, window.employeeChartPayload.hours, 'Часы', '#0f766e');
+    createBarChart('employeeLateChart', window.employeeChartPayload.labels, window.employeeChartPayload.late, 'Опоздания', '#b45309');
+    createLineChart('employeeEarningsChart', window.employeeChartPayload.labels, window.employeeChartPayload.earnings, 'Заработок', '#1d4ed8');
+</script>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Редактировать сотрудника' if employee else 'Добавить сотрудника' }} | WorkTrack{% endblock %}
+{% block page_title %}{{ 'Редактирование сотрудника' if employee else 'Новый сотрудник' }}{% endblock %}
+
+{% block content %}
+<section class="panel form-panel narrow-panel">
+    <div class="panel-heading">
+        <h3>{{ 'Обновление данных сотрудника' if employee else 'Создание аккаунта сотрудника' }}</h3>
+        <p class="muted">
+            {{ 'Пароль можно оставить пустым, чтобы не менять его.' if employee else 'После сохранения сотрудник сможет войти под своим логином.' }}
+        </p>
+    </div>
+
+    <form class="form-grid" method="post">
+        <label class="field">
+            <span>Имя</span>
+            <input type="text" name="full_name" value="{{ employee.full_name if employee else '' }}" required>
+        </label>
+
+        <label class="field">
+            <span>Должность</span>
+            <input type="text" name="position" value="{{ employee.position if employee else '' }}" required>
+        </label>
+
+        <label class="field">
+            <span>Почасовая ставка</span>
+            <input type="number" step="0.01" min="0" name="hourly_rate" value="{{ employee.hourly_rate if employee else 0 }}" required>
+        </label>
+
+        <label class="field">
+            <span>Логин</span>
+            <input type="text" name="username" value="{{ employee.username if employee else '' }}" required>
+        </label>
+
+        <label class="field">
+            <span>{{ 'Новый пароль' if employee else 'Пароль' }}</span>
+            <input type="password" name="password" {% if not employee %}required minlength="4" {% endif %}>
+        </label>
+
+        <div class="form-actions">
+            <button class="button button-primary" type="submit">{{ 'Сохранить изменения' if employee else 'Создать сотрудника' }}</button>
+            <a class="button button-ghost" href="{{ url_for('admin_dashboard') }}">Назад</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

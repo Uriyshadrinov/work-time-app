@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Регистрация | WorkTrack{% endblock %}
+{% block page_title %}Регистрация пользователя{% endblock %}
+
+{% block content %}
+<section class="auth-layout">
+    <div class="hero-card">
+        <p class="eyebrow">Новая учётная запись</p>
+        {% if is_first_user %}
+        <h2>Первый зарегистрированный пользователь станет администратором.</h2>
+        <p class="muted">После этого администратор сможет создавать и редактировать аккаунты сотрудников.</p>
+        {% else %}
+        <h2>Регистрация создаёт аккаунт сотрудника.</h2>
+        <p class="muted">Ставку можно будет назначить или изменить позже из панели администратора.</p>
+        {% endif %}
+    </div>
+
+    <form class="panel auth-panel" method="post">
+        <div class="panel-heading">
+            <h3>Регистрация</h3>
+            <p class="muted">Заполните базовые данные профиля.</p>
+        </div>
+
+        <label class="field">
+            <span>Логин</span>
+            <input type="text" name="username" required>
+        </label>
+
+        <label class="field">
+            <span>Пароль</span>
+            <input type="password" name="password" minlength="4" required>
+        </label>
+
+        <label class="field">
+            <span>Имя сотрудника</span>
+            <input type="text" name="full_name" placeholder="Иван Петров">
+        </label>
+
+        <label class="field">
+            <span>Должность</span>
+            <input type="text" name="position" placeholder="Менеджер">
+        </label>
+
+        <button class="button button-primary button-full" type="submit">Создать аккаунт</button>
+
+        <p class="muted center-text">
+            Уже есть аккаунт?
+            <a href="{{ url_for('login') }}">Войти</a>
+        </p>
+    </form>
+</section>
+{% endblock %}

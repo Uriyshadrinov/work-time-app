@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}Админ-панель | WorkTrack{% endblock %}
+{% block page_title %}Панель администратора{% endblock %}
+
+{% block content %}
+<section class="grid two-columns">
+    <article class="panel">
+        <div class="panel-heading">
+            <h3>Фильтры статистики</h3>
+            <p class="muted">Выберите сотрудника и нужный период.</p>
+        </div>
+
+        <form class="filters" method="get">
+            <label class="field">
+                <span>Сотрудник</span>
+                <select name="employee_id">
+                    <option value="">Все сотрудники</option>
+                    {% for employee in employees %}
+                    <option value="{{ employee.id }}" {% if selected_employee_id==employee.id %}selected{% endif %}>
+                        {{ employee.full_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label class="field">
+                <span>Дата начала</span>
+                <input type="date" name="start_date" value="{{ start_date }}">
+            </label>
+
+            <label class="field">
+                <span>Дата конца</span>
+                <input type="date" name="end_date" value="{{ end_date }}">
+            </label>
+
+            <button class="button button-primary" type="submit">Показать</button>
+        </form>
+    </article>
+
+    <article class="panel accent-panel">
+        <div class="panel-heading">
+            <h3>Отметить пропуск</h3>
+            <p class="muted">Если сотрудник не отметился, администратор может сохранить пропуск вручную.</p>
+        </div>
+
+        <form class="filters" method="post" action="{{ url_for('mark_absence') }}">
+            <label class="field">
+                <span>Сотрудник</span>
+                <select name="employee_id" required>
+                    <option value="">Выберите сотрудника</option>
+                    {% for employee in employees %}
+                    <option value="{{ employee.id }}">{{ employee.full_name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label class="field">
+                <span>Дата пропуска</span>
+                <input type="date" name="work_date" required>
+            </label>
+
+            <button class="button button-warning" type="submit">Сохранить пропуск</button>
+        </form>
+    </article>
+</section>
+
+<section class="stats-grid">
+    <article class="stat-card">
+        <span>Сотрудников в выборке</span>
+        <strong>{{ overview.employee_count or 0 }}</strong>
+    </article>
+    <article class="stat-card">
+        <span>Отработано часов</span>
+        <strong>{{ '%.2f'|format(overview.total_hours or 0) }}</strong>
+    </article>
+    <article class="stat-card">
+        <span>Начислено</span>
+        <strong>{{ '%.2f'|format(overview.total_earnings or 0) }} ₽</strong>
+    </article>
+    <article class="stat-card">
+        <span>Опозданий</span>
+        <strong>{{ overview.total_late_days or 0 }}</strong>
+    </article>
+    <article class="stat-card">
+        <span>Пропусков</span>
+        <strong>{{ overview.total_absences or 0 }}</strong>
+    </article>
+    <article class="stat-card">
+        <span>Фокус</span>
+        <strong>{{ selected_employee.full_name if selected_employee else 'Все сотрудники' }}</strong>
+    </article>
+</section>
+
+<section class="grid charts-grid">
+    <article class="panel">
+        <div class="panel-heading">
+            <h3>Часы по дням</h3>
+            <p class="muted">Динамика рабочего времени за выбранный период.</p>
+        </div>
+        <canvas id="hoursChart"></canvas>
+    </article>
+    <article class="panel">
+        <div class="panel-heading">
+            <h3>Опоздания</h3>
+            <p class="muted">Количество опозданий по датам.</p>
+        </div>
+        <canvas id="lateChart"></canvas>
+    </article>
+    <article class="panel">
+        <div class="panel-heading">
+            <h3>Заработок</h3>
+            <p class="muted">Начисления за рабочие дни.</p>
+        </div>
+        <canvas id="earningsChart"></canvas>
+    </article>
+</section>
+
+<section class="panel">
+    <div class="panel-heading panel-heading-inline">
+        <div>
+            <h3>Сотрудники</h3>
+            <p class="muted">CRUD-управление аккаунтами и ставками.</p>
+        </div>
+        <a class="button button-primary" href="{{ url_for('create_employee') }}">Добавить сотрудника</a>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Имя</th>
+                    <th>Должность</th>
+                    <th>Логин</th>
+                    <th>Ставка</th>
+                    <th>Часы</th>
+                    <th>Заработок</th>
+                    <th>Опоздания</th>
+                    <th>Пропуски</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for employee in employee_cards %}
+                <tr>
+                    <td>{{ employee.full_name }}</td>
+                    <td>{{ employee.position }}</td>
+                    <td>{{ employee.username }}</td>
+                    <td>{{ '%.2f'|format(employee.hourly_rate) }} ₽</td>
+                    <td>{{ '%.2f'|format(employee.total_hours or 0) }}</td>
+                    <td>{{ '%.2f'|format(employee.total_earnings or 0) }} ₽</td>
+                    <td>{{ employee.late_days or 0 }}</td>
+                    <td>{{ employee.absent_days or 0 }}</td>
+                    <td class="actions">
+                        <a class="button button-small button-ghost" href="{{ url_for('edit_employee', employee_id=employee.id) }}">Редактировать</a>
+                        <form method="post" action="{{ url_for('delete_employee', employee_id=employee.id) }}" onsubmit="return confirm('Удалить сотрудника?');">
+                            <button class="button button-small button-danger" type="submit">Удалить</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="empty-state">Сотрудники пока не добавлены.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-heading">
+        <h3>Последняя активность</h3>
+        <p class="muted">Недавние рабочие дни и пропуски в выбранном диапазоне.</p>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>Сотрудник</th>
+                    <th>Статус</th>
+                    <th>Приход</th>
+                    <th>Уход</th>
+                    <th>Часы</th>
+                    <th>Опоздание</th>
+                    <th>Сумма</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in activity %}
+                <tr>
+                    <td>{{ row.work_date }}</td>
+                    <td>{{ row.full_name }}</td>
+                    <td>
+                        <span class="tag {{ 'tag-danger' if row.status == 'absent' else 'tag-success' }}">
+                            {{ 'Пропуск' if row.status == 'absent' else 'Рабочий день' }}
+                        </span>
+                    </td>
+                    <td>{{ row.check_in or '—' }}</td>
+                    <td>{{ row.check_out or '—' }}</td>
+                    <td>{{ '%.2f'|format(row.worked_hours or 0) }}</td>
+                    <td>{{ row.late_minutes or 0 }} мин</td>
+                    <td>{{ '%.2f'|format(row.day_earnings or 0) }} ₽</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="empty-state">За выбранный период данных пока нет.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.chartPayload = {{ chart_data|tojson }};
+</script>
+<script>
+    createLineChart('hoursChart', window.chartPayload.labels, window.chartPayload.hours, 'Часы', '#0f766e');
+    createBarChart('lateChart', window.chartPayload.labels, window.chartPayload.late, 'Опоздания', '#b45309');
+    createLineChart('earningsChart', window.chartPayload.labels, window.chartPayload.earnings, 'Заработок', '#1d4ed8');
+</script>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Вход | WorkTrack{% endblock %}
+{% block page_title %}Вход в систему{% endblock %}
+
+{% block content %}
+<section class="auth-layout">
+    <div class="hero-card">
+        <p class="eyebrow">Контроль рабочего времени</p>
+        <h2>Следите за часами, опозданиями и зарплатой в одном месте.</h2>
+        <p class="muted">
+            Администратор управляет сотрудниками и аналитикой, а сотрудник отмечает начало и конец дня в личном кабинете.
+        </p>
+    </div>
+
+    <form class="panel auth-panel" method="post">
+        <div class="panel-heading">
+            <h3>Вход</h3>
+            <p class="muted">Введите данные учётной записи.</p>
+        </div>
+
+        <label class="field">
+            <span>Логин</span>
+            <input type="text" name="username" placeholder="ivan.petrov" required>
+        </label>
+
+        <label class="field">
+            <span>Пароль</span>
+            <input type="password" name="password" placeholder="••••••••" required>
+        </label>
+
+        <button class="button button-primary button-full" type="submit">Войти</button>
+
+        <p class="muted center-text">
+            Нет аккаунта?
+            <a href="{{ url_for('register') }}">Зарегистрироваться</a>
+        </p>
+    </form>
+</section>
+{% endblock %}

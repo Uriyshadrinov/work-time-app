@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}WorkTrack{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div>
+                <a class="brand" href="{{ url_for('index') }}">
+                    <span class="brand-badge">WT</span>
+                    <div>
+                        <strong>WorkTrack</strong>
+                        <small>Учёт рабочего времени</small>
+                    </div>
+                </a>
+
+                <nav class="nav">
+                    {% if current_user %}
+                    {% if current_user.role == 'admin' %}
+                    <a href="{{ url_for('admin_dashboard') }}" class="nav-link">Панель администратора</a>
+                    <a href="{{ url_for('create_employee') }}" class="nav-link">Добавить сотрудника</a>
+                    {% else %}
+                    <a href="{{ url_for('employee_dashboard') }}" class="nav-link">Мой кабинет</a>
+                    {% endif %}
+                    {% else %}
+                    <a href="{{ url_for('login') }}" class="nav-link">Вход</a>
+                    <a href="{{ url_for('register') }}" class="nav-link">Регистрация</a>
+                    {% endif %}
+                </nav>
+            </div>
+
+            <div class="sidebar-footer">
+                {% if current_user %}
+                <div class="user-pill">
+                    <strong>{{ current_user.username }}</strong>
+                    <span>{{ 'Администратор' if current_user.role == 'admin' else 'Сотрудник' }}</span>
+                </div>
+                <a class="button button-ghost button-full" href="{{ url_for('logout') }}">Выйти</a>
+                {% else %}
+                <p class="muted">Войдите, чтобы вести учёт часов и смотреть статистику.</p>
+                {% endif %}
+            </div>
+        </aside>
+
+        <main class="content">
+            <header class="topbar">
+                <div>
+                    <p class="eyebrow">Рабочее пространство</p>
+                    <h1>{% block page_title %}Система учёта рабочего времени{% endblock %}</h1>
+                </div>
+                <div class="status-card">
+                    <span class="status-dot"></span>
+                    <span>Стандарт начала дня: {{ standard_start_time }}</span>
+                </div>
+            </header>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <section class="flash-stack">
+                {% for category, message in messages %}
+                <article class="flash flash-{{ category }}">{{ message }}</article>
+                {% endfor %}
+            </section>
+            {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
